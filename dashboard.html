@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Twilio Campaign Monitor</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --header-bg: #1a1f36;
+    --header-text: #e8eaf0;
+    --border: #e1e4e8;
+    --text: #24292e;
+    --muted: #6a737d;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --radius: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+
+  /* Header */
+  .site-header {
+    background: var(--header-bg);
+    color: var(--header-text);
+    padding: 20px 24px 18px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .site-header h1 { font-size: 20px; font-weight: 600; letter-spacing: -.3px; }
+  .site-header h1 span { color: #7b8cde; }
+  .last-updated { font-size: 12px; color: #8892b0; }
+
+  /* Summary bar */
+  .summary-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 24px;
+    background: var(--header-bg);
+    border-top: 1px solid rgba(255,255,255,.08);
+  }
+  .stat {
+    background: rgba(255,255,255,.07);
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    text-align: center;
+    min-width: 90px;
+    flex: 1;
+  }
+  .stat .num { font-size: 26px; font-weight: 700; line-height: 1.1; color: #fff; }
+  .stat .lbl { font-size: 11px; color: #8892b0; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+  .stat.stat-approved .num { color: #56d364; }
+  .stat.stat-action .num { color: #f0883e; }
+  .stat.stat-failed .num { color: #f85149; }
+
+  /* Controls */
+  .controls {
+    padding: 14px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .controls label { font-size: 12px; color: var(--muted); margin-right: 4px; }
+  .controls input, .controls select {
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color .15s;
+  }
+  .controls input { min-width: 200px; }
+  .controls input:focus, .controls select:focus { border-color: #0366d6; }
+  .row-count { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  /* API errors */
+  .api-errors {
+    margin: 12px 24px 0;
+    padding: 10px 14px;
+    background: #fff8c5;
+    border: 1px solid #d4a017;
+    border-radius: var(--radius);
+    font-size: 12px;
+  }
+  .api-errors ul { margin-top: 4px; padding-left: 18px; }
+
+  /* Table wrapper */
+  .table-wrap {
+    margin: 16px 24px 24px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    overflow-x: auto;
+    background: var(--surface);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead { background: #f6f8fa; position: sticky; top: 0; z-index: 1; }
+  th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  th:hover { color: var(--text); }
+  th.sorted-asc::after  { content: " ↑"; color: #0366d6; }
+  th.sorted-desc::after { content: " ↓"; color: #0366d6; }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f6f8fa; }
+  tr.hidden { display: none; }
+
+  .id-label { color: var(--muted); font-size: 11px; }
+  .fix-hint { color: #0366d6; }
+  .muted { color: var(--muted); }
+  .raw-status { font-size: 11px; color: var(--muted); font-family: monospace; }
+
+  /* Status badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge-approved { background: #e6ffed; color: #22863a; border: 1px solid #a8d5b5; }
+  .badge-pending  { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+  .badge-eng      { background: #fef9c3; color: #92400e; border: 1px solid #fde68a; }
+  .badge-client   { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
+  .badge-devops   { background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; }
+  .badge-failed   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  .badge-needs    { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+
+  /* Owner labels */
+  .owner { display: inline-block; font-size: 11px; font-weight: 500; padding: 1px 6px; border-radius: 4px; }
+  .owner-eng    { background: #fef9c3; color: #92400e; }
+  .owner-client { background: #fff7ed; color: #c2410c; }
+  .owner-devops { background: #ede9fe; color: #6d28d9; }
+  .owner-none   { color: var(--muted); }
+
+  /* No results */
+  .no-results { text-align: center; padding: 40px; color: var(--muted); display: none; }
+
+  /* Mobile */
+  @media (max-width: 700px) {
+    .site-header, .summary-bar, .controls, .table-wrap, .api-errors { margin-left: 0; margin-right: 0; padding-left: 12px; padding-right: 12px; }
+    .table-wrap { margin: 10px 0 16px; border-radius: 0; }
+    .stat { min-width: 70px; padding: 8px 10px; }
+    .stat .num { font-size: 20px; }
+    .col-issue { max-width: 180px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>Twilio <span>Campaign Monitor</span></h1>
+  <div class="last-updated" title="2026-08-18T15:32:50.787047">Last updated: August 18, 2026 at 03:32 PM MST</div>
+</header>
+
+<div class="summary-bar">
+  <div class="stat"><div class="num">6</div><div class="lbl">Total</div></div>
+  <div class="stat stat-approved"><div class="num">17%</div><div class="lbl">Approved</div></div>
+  <div class="stat"><div class="num">1</div><div class="lbl">Approved #</div></div>
+  <div class="stat"><div class="num">1</div><div class="lbl">Pending</div></div>
+  <div class="stat stat-action"><div class="num">3</div><div class="lbl">Needs Action</div></div>
+  <div class="stat stat-failed"><div class="num">1</div><div class="lbl">Failed</div></div>
+  <div class="stat"><div class="num">1</div><div class="lbl">Not Submitted</div></div>
+</div>
+
+
+
+<div class="controls">
+  <div>
+    <label for="search">Search</label>
+    <input id="search" type="search" placeholder="Company name or ID…" oninput="applyFilters()">
+  </div>
+  <div>
+    <label for="filter-status">Status</label>
+    <select id="filter-status" onchange="applyFilters()">
+      <option value="">All statuses</option>
+      <option value="Approved">Approved</option>
+      <option value="In Progress">In Progress</option>
+      <option value="Issue - Engineering">Issue — Engineering</option>
+      <option value="Issue - Client">Issue — Client</option>
+      <option value="Issue - DevOps">Issue — DevOps</option>
+      <option value="Failed">Failed</option>
+      <option value="Needs Campaign Submission">Needs Submission</option>
+    </select>
+  </div>
+  <div>
+    <label for="filter-owner">Action Owner</label>
+    <select id="filter-owner" onchange="applyFilters()">
+      <option value="">All owners</option>
+      <option value="Engineering">Engineering</option>
+      <option value="Client">Client</option>
+      <option value="DevOps">DevOps</option>
+      <option value="None">None</option>
+    </select>
+  </div>
+  <div class="row-count" id="row-count">6 campaigns</div>
+</div>
+
+<div class="table-wrap">
+  <table id="main-table">
+    <thead>
+      <tr>
+        <th onclick="sortTable(0)" class="col-company">Company</th>
+        <th onclick="sortTable(1)" class="col-property">Property</th>
+        <th onclick="sortTable(2)" class="col-campaign">Campaign Status</th>
+        <th onclick="sortTable(3)" class="col-brand">Brand Status</th>
+        <th class="col-issue">Error / Issue</th>
+        <th onclick="sortTable(5)" class="col-owner">Action Owner</th>
+      </tr>
+    </thead>
+    <tbody id="table-body">
+<tr data-status="Issue - Client" data-owner="Client" data-search="aimco properties property 20101 7832"><td class="col-company">Aimco Properties<br><small class="id-label">ID: 7832</small></td><td class="col-property">Property 20101<br><small class="id-label">ID: 20101</small></td><td class="col-campaign"><span class="badge badge-client">Issue — Client</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue">Privacy Policy URL unverifiable (error 30908)<br><small class='fix-hint'>Client action needed — fix the Privacy Policy URL</small></td><td class="col-owner"><span class="owner owner-client">Client</span></td></tr>
+<tr data-status="In Progress" data-owner="None" data-search="equity residential property 40099 3311"><td class="col-company">Equity Residential<br><small class="id-label">ID: 3311</small></td><td class="col-property">Property 40099<br><small class="id-label">ID: 40099</small></td><td class="col-campaign"><span class="badge badge-pending">In Progress</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner owner-none">—</span></td></tr>
+<tr data-status="Approved" data-owner="None" data-search="greystar real estate property 10021 4521"><td class="col-company">Greystar Real Estate<br><small class="id-label">ID: 4521</small></td><td class="col-property">Property 10021<br><small class="id-label">ID: 10021</small></td><td class="col-campaign"><span class="badge badge-approved">Approved</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner owner-none">—</span></td></tr>
+<tr data-status="Issue - Engineering" data-owner="Engineering" data-search="greystar real estate property 10022 4521"><td class="col-company">Greystar Real Estate<br><small class="id-label">ID: 4521</small></td><td class="col-property">Property 10022<br><small class="id-label">ID: 10022</small></td><td class="col-campaign"><span class="badge badge-eng">Issue — Engineering</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue">Message flow description doesn&#x27;t mention opt-in (error 30896)<br><small class='fix-hint'>Engineering fix in progress (DEV-328433)</small></td><td class="col-owner"><span class="owner owner-eng">Engineering</span></td></tr>
+<tr data-status="Failed" data-owner="None" data-search="maa communities  5500"><td class="col-company">MAA Communities<br><small class="id-label">ID: 5500</small></td><td class="col-property">—</td><td class="col-campaign"><span class="badge badge-failed">Failed</span></td><td class="col-brand"><span class="raw-status">FAILED</span></td><td class="col-issue">Unknown failure<br><small class='fix-hint'>Manual review needed</small></td><td class="col-owner"><span class="owner owner-none">—</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="nexpoint residential property 30050 9934"><td class="col-company">NexPoint Residential<br><small class="id-label">ID: 9934</small></td><td class="col-property">Property 30050<br><small class="id-label">ID: 30050</small></td><td class="col-campaign"><span class="badge badge-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner owner-eng">Engineering</span></td></tr>
+    </tbody>
+  </table>
+  <div class="no-results" id="no-results">No campaigns match the current filters.</div>
+</div>
+
+<script>
+(function() {
+  var sortDir = {};
+
+  function applyFilters() {
+    var search  = document.getElementById('search').value.toLowerCase();
+    var fStatus = document.getElementById('filter-status').value;
+    var fOwner  = document.getElementById('filter-owner').value;
+    var rows    = document.querySelectorAll('#table-body tr');
+    var visible = 0;
+    rows.forEach(function(r) {
+      var s  = r.dataset.status;
+      var o  = r.dataset.owner;
+      var q  = r.dataset.search;
+      var ok = (!search  || q.indexOf(search) !== -1)
+            && (!fStatus || s === fStatus)
+            && (!fOwner  || o === fOwner);
+      r.classList.toggle('hidden', !ok);
+      if (ok) visible++;
+    });
+    document.getElementById('row-count').textContent = visible + ' campaign' + (visible !== 1 ? 's' : '');
+    document.getElementById('no-results').style.display = visible === 0 ? 'block' : 'none';
+  }
+
+  function sortTable(colIdx) {
+    var table = document.getElementById('main-table');
+    var ths   = table.querySelectorAll('th');
+    var tbody = document.getElementById('table-body');
+    var rows  = Array.from(tbody.querySelectorAll('tr'));
+    var dir   = sortDir[colIdx] === 'asc' ? 'desc' : 'asc';
+    sortDir   = {};
+    sortDir[colIdx] = dir;
+
+    ths.forEach(function(t, i) {
+      t.classList.remove('sorted-asc', 'sorted-desc');
+      if (i === colIdx) t.classList.add('sorted-' + dir);
+    });
+
+    rows.sort(function(a, b) {
+      var ta = a.cells[colIdx] ? a.cells[colIdx].textContent.trim() : '';
+      var tb = b.cells[colIdx] ? b.cells[colIdx].textContent.trim() : '';
+      return dir === 'asc' ? ta.localeCompare(tb) : tb.localeCompare(ta);
+    });
+    rows.forEach(function(r) { tbody.appendChild(r); });
+  }
+
+  window.applyFilters = applyFilters;
+  window.sortTable    = sortTable;
+})();
+</script>
+</body>
+</html>
