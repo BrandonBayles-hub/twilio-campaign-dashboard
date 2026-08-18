@@ -3,249 +3,425 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Twilio Campaign Monitor</title>
+<title>Entrata SMS Campaign Monitor</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #f4f5f7;
-    --surface: #ffffff;
-    --header-bg: #1a1f36;
-    --header-text: #e8eaf0;
-    --border: #e1e4e8;
-    --text: #24292e;
-    --muted: #6a737d;
-    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    --radius: 6px;
-    --shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: #ffffff;
+    color: #111111;
+    font-size: 14px;
+    line-height: 1.5;
   }
-  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
 
-  /* Header */
-  .site-header {
-    background: var(--header-bg);
-    color: var(--header-text);
-    padding: 20px 24px 18px;
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .site-header h1 { font-size: 20px; font-weight: 600; letter-spacing: -.3px; }
-  .site-header h1 span { color: #7b8cde; }
-  .last-updated { font-size: 12px; color: #8892b0; }
+  .page { max-width: 1200px; margin: 0 auto; padding: 32px 28px 56px; }
 
-  /* Summary bar */
-  .summary-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    padding: 16px 24px;
-    background: var(--header-bg);
-    border-top: 1px solid rgba(255,255,255,.08);
+  /* ── Page header ── */
+  .page-header { margin-bottom: 24px; }
+  .page-header-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .page-title { font-size: 21px; font-weight: 700; color: #111; letter-spacing: -0.3px; }
+  .date-badge {
+    font-size: 12px; font-weight: 500;
+    background: #f1f3f5; color: #555;
+    padding: 3px 10px; border-radius: 12px;
+    white-space: nowrap; flex-shrink: 0;
   }
-  .stat {
-    background: rgba(255,255,255,.07);
-    border-radius: var(--radius);
-    padding: 10px 16px;
-    text-align: center;
-    min-width: 90px;
-    flex: 1;
-  }
-  .stat .num { font-size: 26px; font-weight: 700; line-height: 1.1; color: #fff; }
-  .stat .lbl { font-size: 11px; color: #8892b0; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
-  .stat.stat-approved .num { color: #56d364; }
-  .stat.stat-action .num { color: #f0883e; }
-  .stat.stat-failed .num { color: #f85149; }
+  .page-subtitle { font-size: 12px; color: #999; margin-top: 2px; }
 
-  /* Controls */
+  /* ── Stats row ── */
+  .stats-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
+  .stat-card {
+    flex: 1; min-width: 140px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  .stat-card .stat-num { font-size: 30px; font-weight: 700; line-height: 1.1; color: #111; }
+  .stat-card .stat-lbl { font-size: 12px; color: #999; margin-top: 4px; }
+  .stat-card.stat-green .stat-num { color: #1a9c3e; }
+  .stat-card.stat-red .stat-num { color: #c0392b; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 36px; }
+  .section-title { font-size: 17px; font-weight: 700; color: #111; margin-bottom: 3px; }
+  .section-meta { font-size: 12px; color: #999; margin-bottom: 8px; }
+  .progress-bar { display: flex; height: 4px; border-radius: 2px; overflow: hidden; background: #eee; margin-bottom: 16px; }
+  .progress-bar .bar-green { background: #1a9c3e; }
+  .progress-bar .bar-red   { background: #c0392b; }
+
+  /* ── Breakdown grid ── */
+  .breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 8px; }
+  .breakdown-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; }
+  .bar-label { width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #333; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 12px; background: #f1f3f5; border-radius: 2px; overflow: hidden; }
+  .bar-fill  { height: 100%; border-radius: 2px; }
+  .bar-count { font-weight: 600; color: #111; min-width: 28px; text-align: right; flex-shrink: 0; }
+
+  /* YTD summary mini-table */
+  .ytd-table { width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid #eee; border-radius: 6px; overflow: hidden; }
+  .ytd-table td { padding: 7px 12px; border-bottom: 1px solid #f0f0f0; }
+  .ytd-table tr:last-child td { border-bottom: none; }
+  .ytd-table tr:nth-child(even) td { background: #fafafa; }
+  .ytd-table .lbl { color: #555; }
+  .ytd-table .val { font-weight: 600; text-align: right; }
+  .ytd-table .val.green { color: #1a9c3e; }
+  .ytd-table .val.red   { color: #c0392b; }
+
+  /* ── Controls ── */
   .controls {
-    padding: 14px 24px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px;
   }
-  .controls label { font-size: 12px; color: var(--muted); margin-right: 4px; }
+  .controls label { font-size: 12px; color: #999; margin-right: 4px; }
   .controls input, .controls select {
-    font-family: var(--font);
-    font-size: 13px;
+    font-family: inherit; font-size: 13px;
     padding: 6px 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg);
-    color: var(--text);
-    outline: none;
+    border: 1px solid #ddd; border-radius: 6px;
+    background: #fff; color: #111; outline: none;
     transition: border-color .15s;
   }
   .controls input { min-width: 200px; }
-  .controls input:focus, .controls select:focus { border-color: #0366d6; }
-  .row-count { font-size: 12px; color: var(--muted); margin-left: auto; }
+  .controls input:focus, .controls select:focus { border-color: #4c8bf5; box-shadow: 0 0 0 2px rgba(76,139,245,.15); }
+  .row-count { font-size: 12px; color: #999; margin-left: auto; }
 
-  /* API errors */
+  /* ── API errors ── */
   .api-errors {
-    margin: 12px 24px 0;
-    padding: 10px 14px;
-    background: #fff8c5;
-    border: 1px solid #d4a017;
-    border-radius: var(--radius);
-    font-size: 12px;
+    background: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px;
+    padding: 10px 14px; font-size: 12px; margin-bottom: 20px;
   }
   .api-errors ul { margin-top: 4px; padding-left: 18px; }
 
-  /* Table wrapper */
-  .table-wrap {
-    margin: 16px 24px 24px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    overflow: hidden;
-    overflow-x: auto;
-    background: var(--surface);
-  }
+  /* ── Table ── */
+  .table-wrap { border: 1px solid #e8e8e8; border-radius: 8px; overflow: hidden; overflow-x: auto; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead { background: #f6f8fa; position: sticky; top: 0; z-index: 1; }
+  thead { background: #fff; position: sticky; top: 0; z-index: 1; }
   th {
-    padding: 10px 12px;
-    text-align: left;
-    font-weight: 600;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: .4px;
-    color: var(--muted);
-    border-bottom: 2px solid var(--border);
-    white-space: nowrap;
-    cursor: pointer;
-    user-select: none;
+    padding: 10px 14px; text-align: left; font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .5px;
+    color: #aaa; border-bottom: 1px solid #e8e8e8;
+    white-space: nowrap; cursor: pointer; user-select: none;
   }
-  th:hover { color: var(--text); }
-  th.sorted-asc::after  { content: " ↑"; color: #0366d6; }
-  th.sorted-desc::after { content: " ↓"; color: #0366d6; }
-  td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-  }
+  th:hover { color: #333; }
+  th.sorted-asc::after  { content: " ↑"; color: #4c8bf5; }
+  th.sorted-desc::after { content: " ↓"; color: #4c8bf5; }
+  td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #f6f8fa; }
+  tbody tr:nth-child(even) td { background: #fafafa; }
+  tbody tr:hover td { background: #f0f4ff !important; }
   tr.hidden { display: none; }
 
-  .id-label { color: var(--muted); font-size: 11px; }
-  .fix-hint { color: #0366d6; }
-  .muted { color: var(--muted); }
-  .raw-status { font-size: 11px; color: var(--muted); font-family: monospace; }
+  .id-label  { color: #bbb; font-size: 11px; }
+  .fix-hint  { color: #4c8bf5; font-size: 11px; }
+  .muted     { color: #ccc; }
+  .raw-status { font-size: 11px; color: #bbb; font-family: monospace; }
 
-  /* Status badges */
-  .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 600;
-    white-space: nowrap;
+  /* ── Status dots ── */
+  .status-dot {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 13px; font-weight: 500;
   }
-  .badge-approved { background: #e6ffed; color: #22863a; border: 1px solid #a8d5b5; }
-  .badge-pending  { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
-  .badge-eng      { background: #fef9c3; color: #92400e; border: 1px solid #fde68a; }
-  .badge-client   { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
-  .badge-devops   { background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; }
-  .badge-failed   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-  .badge-needs    { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+  .status-dot::before { content: "●"; font-size: 8px; line-height: 1; }
+  .dot-approved { color: #111; }
+  .dot-approved::before { color: #1a9c3e; }
+  .dot-pending  { color: #111; }
+  .dot-pending::before  { color: #1a73e8; }
+  .dot-eng      { color: #111; }
+  .dot-eng::before      { color: #c0392b; }
+  .dot-client   { color: #111; }
+  .dot-client::before   { color: #e67e22; }
+  .dot-devops   { color: #111; }
+  .dot-devops::before   { color: #8e44ad; }
+  .dot-failed   { color: #111; }
+  .dot-failed::before   { color: #c0392b; }
+  .dot-needs    { color: #111; }
+  .dot-needs::before    { color: #aaa; }
 
-  /* Owner labels */
-  .owner { display: inline-block; font-size: 11px; font-weight: 500; padding: 1px 6px; border-radius: 4px; }
-  .owner-eng    { background: #fef9c3; color: #92400e; }
-  .owner-client { background: #fff7ed; color: #c2410c; }
-  .owner-devops { background: #ede9fe; color: #6d28d9; }
-  .owner-none   { color: var(--muted); }
+  /* ── Action owner text ── */
+  .owner-text { font-size: 12px; font-weight: 500; }
+  .owner-eng    { color: #1a73e8; }
+  .owner-client { color: #e67e22; }
+  .owner-devops { color: #8e44ad; }
+  .owner-none   { color: #ccc; }
 
-  /* No results */
-  .no-results { text-align: center; padding: 40px; color: var(--muted); display: none; }
+  /* ── No results ── */
+  .no-results { text-align: center; padding: 40px; color: #bbb; display: none; }
 
-  /* Mobile */
-  @media (max-width: 700px) {
-    .site-header, .summary-bar, .controls, .table-wrap, .api-errors { margin-left: 0; margin-right: 0; padding-left: 12px; padding-right: 12px; }
-    .table-wrap { margin: 10px 0 16px; border-radius: 0; }
-    .stat { min-width: 70px; padding: 8px 10px; }
-    .stat .num { font-size: 20px; }
+  @media (max-width: 720px) {
+    .page { padding: 16px 14px; }
+    .stats-row { gap: 8px; }
+    .stat-card { min-width: 110px; }
+    .stat-card .stat-num { font-size: 24px; }
+    .breakdown-grid { grid-template-columns: 1fr; }
     .col-issue { max-width: 180px; }
   }
 </style>
 </head>
 <body>
+<div class="page">
 
-<header class="site-header">
-  <h1>Twilio <span>Campaign Monitor</span></h1>
-  <div class="last-updated" title="2026-08-18T15:32:50.787047">Last updated: August 18, 2026 at 03:32 PM MST</div>
-</header>
-
-<div class="summary-bar">
-  <div class="stat"><div class="num">6</div><div class="lbl">Total</div></div>
-  <div class="stat stat-approved"><div class="num">17%</div><div class="lbl">Approved</div></div>
-  <div class="stat"><div class="num">1</div><div class="lbl">Approved #</div></div>
-  <div class="stat"><div class="num">1</div><div class="lbl">Pending</div></div>
-  <div class="stat stat-action"><div class="num">3</div><div class="lbl">Needs Action</div></div>
-  <div class="stat stat-failed"><div class="num">1</div><div class="lbl">Failed</div></div>
-  <div class="stat"><div class="num">1</div><div class="lbl">Not Submitted</div></div>
-</div>
-
-
-
-<div class="controls">
-  <div>
-    <label for="search">Search</label>
-    <input id="search" type="search" placeholder="Company name or ID…" oninput="applyFilters()">
+  <!-- Page header -->
+  <div class="page-header">
+    <div class="page-header-top">
+      <h1 class="page-title">Entrata SMS Master Account — Campaign &amp; Brand Monitor</h1>
+      <span class="date-badge">Aug 18, 2026</span>
+    </div>
+    <div class="page-subtitle">
+      Account AC77***64f5. Subaccount pattern: Entrata_Subaccount_{CID}. Source: full Twilio API audit August 18, 2026 at 03:45 PM MST.
+    </div>
   </div>
-  <div>
-    <label for="filter-status">Status</label>
-    <select id="filter-status" onchange="applyFilters()">
-      <option value="">All statuses</option>
-      <option value="Approved">Approved</option>
-      <option value="In Progress">In Progress</option>
-      <option value="Issue - Engineering">Issue — Engineering</option>
-      <option value="Issue - Client">Issue — Client</option>
-      <option value="Issue - DevOps">Issue — DevOps</option>
-      <option value="Failed">Failed</option>
-      <option value="Needs Campaign Submission">Needs Submission</option>
-    </select>
-  </div>
-  <div>
-    <label for="filter-owner">Action Owner</label>
-    <select id="filter-owner" onchange="applyFilters()">
-      <option value="">All owners</option>
-      <option value="Engineering">Engineering</option>
-      <option value="Client">Client</option>
-      <option value="DevOps">DevOps</option>
-      <option value="None">None</option>
-    </select>
-  </div>
-  <div class="row-count" id="row-count">6 campaigns</div>
-</div>
 
-<div class="table-wrap">
-  <table id="main-table">
-    <thead>
-      <tr>
-        <th onclick="sortTable(0)" class="col-company">Company</th>
-        <th onclick="sortTable(1)" class="col-property">Property</th>
-        <th onclick="sortTable(2)" class="col-campaign">Campaign Status</th>
-        <th onclick="sortTable(3)" class="col-brand">Brand Status</th>
-        <th class="col-issue">Error / Issue</th>
-        <th onclick="sortTable(5)" class="col-owner">Action Owner</th>
-      </tr>
-    </thead>
-    <tbody id="table-body">
-<tr data-status="Issue - Client" data-owner="Client" data-search="aimco properties property 20101 7832"><td class="col-company">Aimco Properties<br><small class="id-label">ID: 7832</small></td><td class="col-property">Property 20101<br><small class="id-label">ID: 20101</small></td><td class="col-campaign"><span class="badge badge-client">Issue — Client</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue">Privacy Policy URL unverifiable (error 30908)<br><small class='fix-hint'>Client action needed — fix the Privacy Policy URL</small></td><td class="col-owner"><span class="owner owner-client">Client</span></td></tr>
-<tr data-status="In Progress" data-owner="None" data-search="equity residential property 40099 3311"><td class="col-company">Equity Residential<br><small class="id-label">ID: 3311</small></td><td class="col-property">Property 40099<br><small class="id-label">ID: 40099</small></td><td class="col-campaign"><span class="badge badge-pending">In Progress</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner owner-none">—</span></td></tr>
-<tr data-status="Approved" data-owner="None" data-search="greystar real estate property 10021 4521"><td class="col-company">Greystar Real Estate<br><small class="id-label">ID: 4521</small></td><td class="col-property">Property 10021<br><small class="id-label">ID: 10021</small></td><td class="col-campaign"><span class="badge badge-approved">Approved</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner owner-none">—</span></td></tr>
-<tr data-status="Issue - Engineering" data-owner="Engineering" data-search="greystar real estate property 10022 4521"><td class="col-company">Greystar Real Estate<br><small class="id-label">ID: 4521</small></td><td class="col-property">Property 10022<br><small class="id-label">ID: 10022</small></td><td class="col-campaign"><span class="badge badge-eng">Issue — Engineering</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue">Message flow description doesn&#x27;t mention opt-in (error 30896)<br><small class='fix-hint'>Engineering fix in progress (DEV-328433)</small></td><td class="col-owner"><span class="owner owner-eng">Engineering</span></td></tr>
-<tr data-status="Failed" data-owner="None" data-search="maa communities  5500"><td class="col-company">MAA Communities<br><small class="id-label">ID: 5500</small></td><td class="col-property">—</td><td class="col-campaign"><span class="badge badge-failed">Failed</span></td><td class="col-brand"><span class="raw-status">FAILED</span></td><td class="col-issue">Unknown failure<br><small class='fix-hint'>Manual review needed</small></td><td class="col-owner"><span class="owner owner-none">—</span></td></tr>
-<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="nexpoint residential property 30050 9934"><td class="col-company">NexPoint Residential<br><small class="id-label">ID: 9934</small></td><td class="col-property">Property 30050<br><small class="id-label">ID: 30050</small></td><td class="col-campaign"><span class="badge badge-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner owner-eng">Engineering</span></td></tr>
-    </tbody>
-  </table>
-  <div class="no-results" id="no-results">No campaigns match the current filters.</div>
-</div>
+  <!-- Stats row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num">133</div>
+      <div class="stat-lbl">Total campaigns &amp; brands</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">4</div>
+      <div class="stat-lbl">Approved all-time</div>
+    </div>
+    <div class="stat-card stat-green">
+      <div class="stat-num">3%</div>
+      <div class="stat-lbl">Approval rate</div>
+    </div>
+    <div class="stat-card stat-red">
+      <div class="stat-num">1</div>
+      <div class="stat-lbl">Needs action</div>
+    </div>
+  </div>
+
+  <!-- Status breakdown -->
+  <div class="section">
+    <div class="section-title">Status Breakdown</div>
+    <div class="section-meta">4 approved · 1 need action · 0 pending</div>
+    <div class="progress-bar">
+      <div class="bar-green" style="width:3%"></div>
+      <div class="bar-red"   style="width:1%"></div>
+    </div>
+    <div class="breakdown-grid">
+      <div>
+        <div class="breakdown-row"><span class="bar-label">Approved</span><div class="bar-track"><div class="bar-fill" style="width:3%;background:#1a9c3e"></div></div><span class="bar-count">4</span></div>
+<div class="breakdown-row"><span class="bar-label">In Progress</span><div class="bar-track"><div class="bar-fill" style="width:0%;background:#1a73e8"></div></div><span class="bar-count">0</span></div>
+<div class="breakdown-row"><span class="bar-label">Issue — Eng</span><div class="bar-track"><div class="bar-fill" style="width:1%;background:#c0392b"></div></div><span class="bar-count">1</span></div>
+<div class="breakdown-row"><span class="bar-label">Issue — Client</span><div class="bar-track"><div class="bar-fill" style="width:0%;background:#e67e22"></div></div><span class="bar-count">0</span></div>
+<div class="breakdown-row"><span class="bar-label">Issue — DevOps</span><div class="bar-track"><div class="bar-fill" style="width:0%;background:#8e44ad"></div></div><span class="bar-count">0</span></div>
+<div class="breakdown-row"><span class="bar-label">Failed</span><div class="bar-track"><div class="bar-fill" style="width:0%;background:#e74c3c"></div></div><span class="bar-count">0</span></div>
+<div class="breakdown-row"><span class="bar-label">Needs Submission</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#95a5a6"></div></div><span class="bar-count">128</span></div>
+
+      </div>
+      <div>
+        <table class="ytd-table">
+          <tbody>
+            <tr><td class="lbl">Total campaigns &amp; brands</td><td class="val">133</td></tr>
+            <tr><td class="lbl">Approved</td><td class="val green">4</td></tr>
+            <tr><td class="lbl">In progress / pending</td><td class="val">0</td></tr>
+            <tr><td class="lbl">Issue — Engineering</td><td class="val red">1</td></tr>
+            <tr><td class="lbl">Issue — Client</td><td class="val red">0</td></tr>
+            <tr><td class="lbl">Issue — DevOps</td><td class="val red">0</td></tr>
+            <tr><td class="lbl">Failed</td><td class="val red">0</td></tr>
+            <tr><td class="lbl">Needs submission</td><td class="val">128</td></tr>
+            <tr><td class="lbl">Approval rate</td><td class="val green">3%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <!-- Campaign / brand detail -->
+  <div class="section">
+    <div class="section-title">All Campaigns &amp; Brand Registrations</div>
+    <div class="section-meta">4 approved · 1 need action · 0 pending</div>
+    <div class="progress-bar">
+      <div class="bar-green" style="width:3%"></div>
+      <div class="bar-red"   style="width:1%"></div>
+    </div>
+
+    <div class="controls">
+      <div>
+        <label for="search">Search</label>
+        <input id="search" type="search" placeholder="Company name or ID…" oninput="applyFilters()">
+      </div>
+      <div>
+        <label for="filter-status">Status</label>
+        <select id="filter-status" onchange="applyFilters()">
+          <option value="">All statuses</option>
+          <option value="Approved">Approved</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Issue - Engineering">Issue — Engineering</option>
+          <option value="Issue - Client">Issue — Client</option>
+          <option value="Issue - DevOps">Issue — DevOps</option>
+          <option value="Failed">Failed</option>
+          <option value="Needs Campaign Submission">Needs Submission</option>
+        </select>
+      </div>
+      <div>
+        <label for="filter-owner">Action Owner</label>
+        <select id="filter-owner" onchange="applyFilters()">
+          <option value="">All owners</option>
+          <option value="Engineering">Engineering</option>
+          <option value="Client">Client</option>
+          <option value="DevOps">DevOps</option>
+          <option value="None">None</option>
+        </select>
+      </div>
+      <div class="row-count" id="row-count">133 records</div>
+    </div>
+
+    <div class="table-wrap">
+      <table id="main-table">
+        <thead>
+          <tr>
+            <th onclick="sortTable(0)" class="col-company">Company</th>
+            <th onclick="sortTable(1)" class="col-property">Property</th>
+            <th onclick="sortTable(2)" class="col-campaign">Campaign Status</th>
+            <th onclick="sortTable(3)" class="col-brand">Brand Status</th>
+            <th class="col-issue">Error / Issue</th>
+            <th onclick="sortTable(5)" class="col-owner">Action Owner</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 14046 property 1131330 14046"><td class="col-company">Client 14046<br><small class="id-label">ID: 14046</small></td><td class="col-property">Property 1131330<br><small class="id-label">ID: 1131330</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 14046 property 1151787 14046"><td class="col-company">Client 14046<br><small class="id-label">ID: 14046</small></td><td class="col-property">Property 1151787<br><small class="id-label">ID: 1151787</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 14046 property 1151788 14046"><td class="col-company">Client 14046<br><small class="id-label">ID: 14046</small></td><td class="col-property">Property 1151788<br><small class="id-label">ID: 1151788</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 14046 property 491320 14046"><td class="col-company">Client 14046<br><small class="id-label">ID: 14046</small></td><td class="col-property">Property 491320<br><small class="id-label">ID: 491320</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 14046 property 491322 14046"><td class="col-company">Client 14046<br><small class="id-label">ID: 14046</small></td><td class="col-property">Property 491322<br><small class="id-label">ID: 491322</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 14046 property 491323 14046"><td class="col-company">Client 14046<br><small class="id-label">ID: 14046</small></td><td class="col-property">Property 491323<br><small class="id-label">ID: 491323</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 14046 property 491324 14046"><td class="col-company">Client 14046<br><small class="id-label">ID: 14046</small></td><td class="col-property">Property 491324<br><small class="id-label">ID: 491324</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 14046 property 491325 14046"><td class="col-company">Client 14046<br><small class="id-label">ID: 14046</small></td><td class="col-property">Property 491325<br><small class="id-label">ID: 491325</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 14046 property 894656 14046"><td class="col-company">Client 14046<br><small class="id-label">ID: 14046</small></td><td class="col-property">Property 894656<br><small class="id-label">ID: 894656</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 14046 property 952484 14046"><td class="col-company">Client 14046<br><small class="id-label">ID: 14046</small></td><td class="col-property">Property 952484<br><small class="id-label">ID: 952484</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 14046 property 992705 14046"><td class="col-company">Client 14046<br><small class="id-label">ID: 14046</small></td><td class="col-property">Property 992705<br><small class="id-label">ID: 992705</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 15790 property 1088888 15790"><td class="col-company">Client 15790<br><small class="id-label">ID: 15790</small></td><td class="col-property">Property 1088888<br><small class="id-label">ID: 1088888</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 15790 property 1127928 15790"><td class="col-company">Client 15790<br><small class="id-label">ID: 15790</small></td><td class="col-property">Property 1127928<br><small class="id-label">ID: 1127928</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 15790 property 1156663 15790"><td class="col-company">Client 15790<br><small class="id-label">ID: 15790</small></td><td class="col-property">Property 1156663<br><small class="id-label">ID: 1156663</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 15790 property 1165675 15790"><td class="col-company">Client 15790<br><small class="id-label">ID: 15790</small></td><td class="col-property">Property 1165675<br><small class="id-label">ID: 1165675</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 15790 property 653356 15790"><td class="col-company">Client 15790<br><small class="id-label">ID: 15790</small></td><td class="col-property">Property 653356<br><small class="id-label">ID: 653356</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 15790 property 653357 15790"><td class="col-company">Client 15790<br><small class="id-label">ID: 15790</small></td><td class="col-property">Property 653357<br><small class="id-label">ID: 653357</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 15790 property 653358 15790"><td class="col-company">Client 15790<br><small class="id-label">ID: 15790</small></td><td class="col-property">Property 653358<br><small class="id-label">ID: 653358</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 15790 property 736799 15790"><td class="col-company">Client 15790<br><small class="id-label">ID: 15790</small></td><td class="col-property">Property 736799<br><small class="id-label">ID: 736799</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 15790 property 746483 15790"><td class="col-company">Client 15790<br><small class="id-label">ID: 15790</small></td><td class="col-property">Property 746483<br><small class="id-label">ID: 746483</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 15790 property 857886 15790"><td class="col-company">Client 15790<br><small class="id-label">ID: 15790</small></td><td class="col-property">Property 857886<br><small class="id-label">ID: 857886</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 16725 property 1166695 16725"><td class="col-company">Client 16725<br><small class="id-label">ID: 16725</small></td><td class="col-property">Property 1166695<br><small class="id-label">ID: 1166695</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 16725 property 1166696 16725"><td class="col-company">Client 16725<br><small class="id-label">ID: 16725</small></td><td class="col-property">Property 1166696<br><small class="id-label">ID: 1166696</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 16725 property 1166698 16725"><td class="col-company">Client 16725<br><small class="id-label">ID: 16725</small></td><td class="col-property">Property 1166698<br><small class="id-label">ID: 1166698</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 16725 property 858042 16725"><td class="col-company">Client 16725<br><small class="id-label">ID: 16725</small></td><td class="col-property">Property 858042<br><small class="id-label">ID: 858042</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 16725 property 858042 16725"><td class="col-company">Client 16725<br><small class="id-label">ID: 16725</small></td><td class="col-property">Property 858042<br><small class="id-label">ID: 858042</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 16725 property 858043 16725"><td class="col-company">Client 16725<br><small class="id-label">ID: 16725</small></td><td class="col-property">Property 858043<br><small class="id-label">ID: 858043</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 16824 property 1162427 16824"><td class="col-company">Client 16824<br><small class="id-label">ID: 16824</small></td><td class="col-property">Property 1162427<br><small class="id-label">ID: 1162427</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 16824 property 1165193 16824"><td class="col-company">Client 16824<br><small class="id-label">ID: 16824</small></td><td class="col-property">Property 1165193<br><small class="id-label">ID: 1165193</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 16824 property 1182798 16824"><td class="col-company">Client 16824<br><small class="id-label">ID: 16824</small></td><td class="col-property">Property 1182798<br><small class="id-label">ID: 1182798</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 16824 property 894967 16824"><td class="col-company">Client 16824<br><small class="id-label">ID: 16824</small></td><td class="col-property">Property 894967<br><small class="id-label">ID: 894967</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 16824 property 990547 16824"><td class="col-company">Client 16824<br><small class="id-label">ID: 16824</small></td><td class="col-property">Property 990547<br><small class="id-label">ID: 990547</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 101516 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 101516<br><small class="id-label">ID: 101516</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 101516 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 101516<br><small class="id-label">ID: 101516</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 1022 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 1022<br><small class="id-label">ID: 1022</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 172028 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 172028<br><small class="id-label">ID: 172028</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 172290 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 172290<br><small class="id-label">ID: 172290</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 172775 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 172775<br><small class="id-label">ID: 172775</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 172800 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 172800<br><small class="id-label">ID: 172800</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 175646 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 175646<br><small class="id-label">ID: 175646</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 175646 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 175646<br><small class="id-label">ID: 175646</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 175646 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 175646<br><small class="id-label">ID: 175646</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 175646 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 175646<br><small class="id-label">ID: 175646</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 18462 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 18462<br><small class="id-label">ID: 18462</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 18462 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 18462<br><small class="id-label">ID: 18462</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 18462 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 18462<br><small class="id-label">ID: 18462</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 18462 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 18462<br><small class="id-label">ID: 18462</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 18462 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 18462<br><small class="id-label">ID: 18462</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 19463 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 19463<br><small class="id-label">ID: 19463</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 2537 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 2537<br><small class="id-label">ID: 2537</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 550592 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 550592<br><small class="id-label">ID: 550592</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 581789 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 581789<br><small class="id-label">ID: 581789</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 581789 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 581789<br><small class="id-label">ID: 581789</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 625012 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 625012<br><small class="id-label">ID: 625012</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 988178 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 988178<br><small class="id-label">ID: 988178</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 99295 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 99295<br><small class="id-label">ID: 99295</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 99295 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 99295<br><small class="id-label">ID: 99295</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="client 235 property 99295 235"><td class="col-company">Client 235<br><small class="id-label">ID: 235</small></td><td class="col-property">Property 99295<br><small class="id-label">ID: 99295</small></td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Approved" data-owner="None" data-search="entrata sms master account  ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">—</td><td class="col-campaign"><span class="status-dot dot-approved">Approved</span></td><td class="col-brand"><span class="raw-status">APPROVED</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-none">—</span></td></tr>
+<tr data-status="Approved" data-owner="None" data-search="entrata sms master account  ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">—</td><td class="col-campaign"><span class="status-dot dot-approved">Approved</span></td><td class="col-brand"><span class="raw-status">APPROVED</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-none">—</span></td></tr>
+<tr data-status="Approved" data-owner="None" data-search="entrata sms master account  ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">—</td><td class="col-campaign"><span class="status-dot dot-approved">Approved</span></td><td class="col-brand"><span class="raw-status">APPROVED</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-none">—</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account my service! ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">My Service!</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_235_test_curl ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_235_Test_Curl</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Issue - Engineering" data-owner="Engineering" data-search="entrata sms master account eli_evals_secretshopper ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">ELI_Evals_SecretShopper</td><td class="col-campaign"><span class="status-dot dot-eng">Issue — Engineering</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue">Message flow description doesn&#x27;t mention opt-in clearly (error 30896)<br><small class='fix-hint'>Engineering fix in progress (DEV-328433)</small></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entratatesta2ptollfree ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">EntrataTestA2PTollFree</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_235_test_curl_1 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_235_Test_Curl_1</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account curl_test_112233 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Curl_Test_112233</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account default messaging service for conversations ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Default Messaging Service for Conversations</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_amber ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_Amber</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata communication test ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata Communication Test</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account emergancy communcation system ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Emergancy Communcation System</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account curl_test_11223344 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Curl_Test_11223344</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entrata_test_121 ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">Entrata_Test_121</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Needs Campaign Submission" data-owner="Engineering" data-search="entrata sms master account entratatesta2plocal ac77***64f5"><td class="col-company">Entrata SMS Master Account<br><small class="id-label">ID: AC77***64f5</small></td><td class="col-property">EntrataTestA2PLocal</td><td class="col-campaign"><span class="status-dot dot-needs">Needs Submission</span></td><td class="col-brand"><span class="muted">—</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-eng">Engineering</span></td></tr>
+<tr data-status="Approved" data-owner="None" data-search="entrata_subaccount_102204  ac59***9c6b"><td class="col-company">Entrata_Subaccount_102204<br><small class="id-label">ID: AC59***9c6b</small></td><td class="col-property">—</td><td class="col-campaign"><span class="status-dot dot-approved">Approved</span></td><td class="col-brand"><span class="raw-status">APPROVED</span></td><td class="col-issue"><span class="muted">—</span></td><td class="col-owner"><span class="owner-text owner-none">—</span></td></tr>
+        </tbody>
+      </table>
+      <div class="no-results" id="no-results">No records match the current filters.</div>
+    </div>
+  </div>
+
+</div><!-- /.page -->
 
 <script>
 (function() {
@@ -267,7 +443,7 @@
       r.classList.toggle('hidden', !ok);
       if (ok) visible++;
     });
-    document.getElementById('row-count').textContent = visible + ' campaign' + (visible !== 1 ? 's' : '');
+    document.getElementById('row-count').textContent = visible + ' record' + (visible !== 1 ? 's' : '');
     document.getElementById('no-results').style.display = visible === 0 ? 'block' : 'none';
   }
 
